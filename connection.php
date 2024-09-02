@@ -23,6 +23,7 @@ class DatabaseConnection
         $this->database = $_ENV['DATABASE_DB'];
 
         $this->conn = new PDO('mysql:host=' . $this->server . ';dbname=' . $this->database, $this->username, $this->password);
+        
     }
 
     public static function getInstance()
@@ -35,6 +36,7 @@ class DatabaseConnection
 
     public function getConnection()
     {
+        
         return $this->conn;
     }
 }
