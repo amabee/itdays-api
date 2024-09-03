@@ -21,9 +21,25 @@ class Auth
         try {
             if (isset($json['username']) && isset($json['password'])) {
                 $username = $json['username'];
-                $password = sha1($json['password']); // Ensure you hash passwords consistently
+                $password = sha1($json['password']);
 
-                $sql = 'SELECT `handler_id`, `h_fname`, `h_lname`, `h_email`, `status` FROM `handlers` WHERE (`handler_id` = :username OR `h_email` = :username) AND `h_pwd` = :password';
+                $sql = 'SELECT 
+                            handlers.handler_id, 
+                            handlers.h_fname, 
+                            handlers.h_lname, 
+                            handlers.h_email, 
+                            handlers.status, 
+                            tribu.pid 
+                        FROM 
+                            handlers
+                        INNER JOIN 
+                            tribu 
+                        ON 
+                            handlers.handler_id = tribu.handler_id
+                        WHERE 
+                            (handlers.handler_id = :username OR handlers.h_email = :username) 
+                            AND handlers.h_pwd = :password'
+                ;
 
                 $stmt = $this->conn->prepare($sql);
                 $stmt->bindParam(':username', $username, PDO::PARAM_STR);
