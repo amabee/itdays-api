@@ -120,8 +120,6 @@ class Main
             return json_encode(["error" => "Database error: " . $e->getMessage()]);
         }
     }
-
-
     public function getTribu()
     {
         try {
@@ -139,6 +137,57 @@ class Main
             return json_encode(["error" => "Database error: " . $e->getMessage()]);
         }
     }
+    public function getTribuDetails()
+    {
+        try {
+            $sql = "SELECT 
+                        t.*, 
+                        COUNT(s.stud_id) as member_count,
+                        SUM(CASE WHEN a.aid IS NOT NULL THEN 1 ELSE 0 END) as attendance_count,
+                        COUNT(s.stud_id) - SUM(CASE WHEN a.aid IS NOT NULL THEN 1 ELSE 0 END) as absent_count
+                    FROM tribu t
+                    LEFT JOIN students s ON t.pid = s.tribu_id
+                    LEFT JOIN attendance a ON s.stud_id = a.stud_id
+                    GROUP BY t.pid";
+
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            $tribu = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if ($tribu) {
+                return json_encode(["success" => $tribu]);
+            } else {
+                return json_encode(["error" => "No Tribu found"]);
+            }
+        } catch (PDOException $e) {
+            return json_encode(["error" => "Database error: " . $e->getMessage()]);
+        }
+    }
+
+
+    public function assignTeacher2Tribu($json)
+    {
+        $json = json_decode($json, true);
+        try {
+            $update_at = date('Y-m-d H:i:s');
+            $sql = "UPDATE `tribu` SET 
+                    `handler_id`= :hid, `update_at`= :update_at
+                    WHERE pid = :pid";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(":hid", $json["hid"]);
+            $stmt->bindParam(":update_at", $update_at);
+            $stmt->bindParam(":pid", $json["pid"]);
+
+            if ($stmt->execute()) {
+                return json_encode(array("success" => "Successfully assigned to the tribu"));
+            } else {
+                return json_encode(array("error" => $stmt->errorInfo()));
+            }
+        } catch (PDOException $e) {
+            return json_encode(array("error" => $e->getMessage()));
+        }
+    }
+
 
 }
 
@@ -159,8 +208,14 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" || $_SERVER["REQUEST_METHOD"] == "POST")
             case 'getTribu':
                 echo $main->getTribu();
                 break;
+            case 'getTribuDetails':
+                echo $main->getTribuDetails();
+                break;
             case 'addTribu':
                 echo $main->addTribu($json);
+                break;
+            case 'assignTeacher2Tribu':
+                echo $main->assignTeacher2Tribu($json);
                 break;
             default:
                 echo json_encode(["error" => "Invalid operation"]);
